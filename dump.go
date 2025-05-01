@@ -72,9 +72,9 @@ body {
 	<p class="message {{if .JID}}incoming{{else}}outgoing{{end}}">
 		{{ nl2br .Text }}
 		{{ if eq .MediaExt ".jpg" }}
-			<img src="../{{.Media}}">
+			<img src="../{{.Media}}" alt="{{.Media}}">
 		{{ else if eq .MediaExt ".png" }}
-			<img src="../{{.Media}}">
+			<img src="../{{.Media}}" alt="{{.Media}}">
 		{{ else if eq .MediaExt ".mp4" }}
 			<video controls>
 				<source src="../{{.Media}}" type="video/mp4">
@@ -92,7 +92,10 @@ body {
 	t, err := template.New("foo").Funcs(funcs).Parse(tpl)
 	check("DumpSession template parsing", err)
 
-	out, err := os.Create(path.Join(app.DstDir, "sessions", fmt.Sprintf("session_%d.html", session.ID)))
+	// Sanitize session name to avoid invalid characters in filenames
+    sanitizedSessionName := strings.ReplaceAll(session.Name, "/", "-")
+    sanitizedSessionName = strings.ReplaceAll(sanitizedSessionName, " ", "_")
+	out, err := os.Create(path.Join(app.DstDir, "sessions", fmt.Sprintf("session_%d_%s.html", session.ID, sanitizedSessionName)))
 	check("DumpSession creating file", err)
 	defer out.Close()
 

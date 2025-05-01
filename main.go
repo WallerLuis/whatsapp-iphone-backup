@@ -8,7 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
+	// "strconv"
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -32,6 +32,7 @@ type Media struct {
 	Hash string
 	Path string
 	Ext  string
+	Filename string
 }
 
 type Message struct {
@@ -98,7 +99,7 @@ func (app *App) LoadMediaMap() {
 	var err error
 	var query string
 	var id int
-	var hash, path *string
+	var hash, path, authorName *string
 
 	// Build path to hash map
 	// e.g. hashMap["somepath"] = "124324345436645645"
@@ -114,12 +115,12 @@ func (app *App) LoadMediaMap() {
 	}
 
 	// Build Media Hash
-	query = "SELECT Z_PK, ZMEDIALOCALPATH FROM ZWAMEDIAITEM"
+	query = "SELECT Z_PK, ZMEDIALOCALPATH, ZAUTHORNAME FROM ZWAMEDIAITEM"
 	rows, err = app.ChatDB.Query(query)
 	check("MediaMap ChatDB", err)
 
 	for rows.Next() {
-		err = rows.Scan(&id, &path)
+		err = rows.Scan(&id, &path, &authorName)
 		check("scan 2", err)
 		if path == nil {
 			continue
@@ -127,6 +128,14 @@ func (app *App) LoadMediaMap() {
 		media := Media{}
 		media.Path = *path
 		media.Ext = filepath.Ext(*path)
+		
+		// Use ZAUTHORNAME as the filename if available
+        if authorName != nil && *authorName != "" {
+            media.Filename = *authorName + media.Ext
+        } else {
+            media.Filename = filepath.Base(*path)
+        }
+
 		if path != nil && strings.HasPrefix(*path, "/") {
 			media.Hash = hashMap["Message"+*path]
 		} else {
@@ -167,7 +176,9 @@ func (app *App) SessionMessages(session Session) []Message {
 	rows, err := app.ChatDB.Query(query, session.ID)
 	check("SessionMessages", err)
 
-	mediaBase := path.Join("media", strconv.Itoa(session.ID))
+	// Sanitize session name to avoid invalid characters in folder names
+    sanitizedSessionName := strings.ReplaceAll(session.Name, "/", "_")
+    mediaBase := path.Join("media", sanitizedSessionName)
 	err = os.MkdirAll(path.Join(app.DstDir, mediaBase), 0700)
 	check("Makedir", err)
 
@@ -186,12 +197,12 @@ func (app *App) SessionMessages(session Session) []Message {
 			media := app.MediaMap[*mediaID]
 			if media.Hash != "" {
 				mediaSrc := path.Join(app.SrcDir, media.Hash[:2], media.Hash)
-				mediaDst := path.Join(app.DstDir, mediaBase, fmt.Sprintf("%d%s", *mediaID, media.Ext))
+				mediaDst := path.Join(app.DstDir, mediaBase, media.Filename)
 				if _, err := os.Stat(mediaDst); os.IsNotExist(err) {
 					_, err := copyFile(mediaSrc, mediaDst)
 					check("Copy media", err)
 				}
-				msg.Media = path.Join(mediaBase, fmt.Sprintf("%d%s", *mediaID, media.Ext))
+				msg.Media = path.Join(mediaBase, media.Filename)
 				msg.MediaExt = media.Ext
 			} else {
 				// VCARD maybe?
