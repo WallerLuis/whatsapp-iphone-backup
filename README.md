@@ -1,4 +1,18 @@
-# WhatsApp iPhone Backup Tool
+# Own edits: Luis Waller 01.05.2025
+
+Fork of: https://github.com/rayed/whatsapp-iphone-backup
+
+## How to use:
+
+1. Install go:https://dev.to/deadwin19/how-to-install-golang-on-wslwsl2-2880
+2. git clone https://github.com/rayed/whatsapp-iphone-backup.git
+3. cd whatsapp-iphone-backup
+4. go mod init [github.com/WallerLuis/whatsapp-iphone-backup](http://github.com/WallerLuis/whatsapp-iphone-backup)
+5. go get [github.com/mattn/go-sqlite3](http://github.com/mattn/go-sqlite3)
+6. go build -o exporter \*.go
+7. ./exporter -dst "/mnt/c/Users/LuwiY/Nextcloud/WhatsApp/01-05-2025/" -src "/mnt/c/Users/LuwiY/Apple/MobileSync/Backup/00008030-000C51122185802E/”
+
+# WhatsApp iPhone Backup Toola
 
 Export WhatsApp application data from iPhone backup.
 
